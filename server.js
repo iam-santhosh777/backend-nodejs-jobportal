@@ -21,7 +21,7 @@ const allowedOrigins = process.env.CLIENT_URL?.split(',').map(url => url.trim())
   'http://localhost:5173',
   'http://localhost:5175',
   'http://localhost:3000',
-  'https://frontend-reactjs-jobportal.vercel.app/'
+  'https://frontend-reactjs-jobportal.vercel.app'
 ];
 
 // CORS origin checker function
