@@ -17,24 +17,35 @@ const server = http.createServer(app);
 const { Server } = require('socket.io');
 
 // CORS allowed origins configuration
-const allowedOrigins = process.env.CLIENT_URL?.split(',') || [
+const allowedOrigins = process.env.CLIENT_URL?.split(',').map(url => url.trim()) || [
   'http://localhost:5173',
+  'http://localhost:5175',
   'http://localhost:3000',
   'https://frontend-reactjs-jobportal-fni2umwwn.vercel.app'
 ];
 
+// CORS origin checker function
+const corsOriginChecker = (origin, callback) => {
+  // Allow requests with no origin (like mobile apps, curl, Postman)
+  if (!origin) {
+    return callback(null, true);
+  }
+  
+  // Allow if origin is in allowed list or if wildcard is set
+  if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+    callback(null, true);
+  } else {
+    // Log for debugging
+    console.log(`CORS blocked origin: ${origin}`);
+    console.log(`Allowed origins: ${allowedOrigins.join(', ')}`);
+    callback(new Error('Not allowed by CORS'));
+  }
+};
+
 // Initialize Socket.io
 const io = new Server(server, {
   cors: {
-    origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
+    origin: corsOriginChecker,
     methods: ['GET', 'POST'],
     credentials: true
   }
@@ -51,20 +62,48 @@ app.use((req, res, next) => {
 
 const PORT = process.env.PORT || 3000;
 
-app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
-      callback(null, true);
+// CORS middleware - MUST be first, before any routes
+// Handles both preflight OPTIONS and actual requests
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  
+  // Log for debugging
+  if (req.method === 'OPTIONS') {
+    console.log(`[CORS] OPTIONS preflight from: ${origin || 'No origin'}`);
+    console.log(`[CORS] Allowed origins: ${JSON.stringify(allowedOrigins)}`);
+  }
+  
+  // Check if origin is allowed (or no origin for curl/Postman)
+  const isAllowed = !origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*');
+  
+  if (isAllowed) {
+    // Set CORS headers
+    if (origin) {
+      res.header('Access-Control-Allow-Origin', origin);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      res.header('Access-Control-Allow-Origin', '*');
     }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+    res.header('Access-Control-Allow-Credentials', 'true');
+    
+    // Handle preflight OPTIONS request
+    if (req.method === 'OPTIONS') {
+      res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+      res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+      res.header('Access-Control-Max-Age', '86400'); // 24 hours
+      console.log(`[CORS] Sending 204 for OPTIONS from: ${origin}`);
+      return res.sendStatus(204);
+    }
+  } else {
+    console.log(`[CORS] ❌ BLOCKED origin: ${origin}`);
+    console.log(`[CORS] Allowed: ${JSON.stringify(allowedOrigins)}`);
+    if (req.method === 'OPTIONS') {
+      return res.status(403).json({ error: 'CORS: Origin not allowed' });
+    }
+  }
+  
+  next();
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -85,6 +124,10 @@ app.get('/', (req, res) => {
   res.json({
     message: 'HRMS + Job Portal API is running!',
     version: '1.0.0',
+    cors: {
+      allowedOrigins: allowedOrigins,
+      clientUrl: process.env.CLIENT_URL || 'Not set'
+    },
     endpoints: {
       auth: {
         login: 'POST /api/auth/login',
@@ -122,7 +165,12 @@ app.get('/api/health', async (req, res) => {
     status: 'OK',
     database: dbConnected ? 'Connected' : 'Disconnected',
     timestamp: new Date().toISOString(),
-    socket: 'Active'
+    socket: 'Active',
+    cors: {
+      allowedOrigins: allowedOrigins,
+      requestOrigin: req.headers.origin || 'No origin header',
+      clientUrl: process.env.CLIENT_URL || 'Not set'
+    }
   });
 });
 
