@@ -57,12 +57,14 @@ class JobController {
 
       const updatedJob = await Job.updateExpiryStatus(id, 'expired');
 
-      // Emit socket event for real-time update
-      req.io.emit('job-expired', {
-        jobId: id,
-        jobTitle: updatedJob.title,
-        message: `Job "${updatedJob.title}" has been marked as expired`
-      });
+      // Emit socket event for real-time update (if Socket.io is available)
+      if (req.io) {
+        req.io.emit('job-expired', {
+          jobId: id,
+          jobTitle: updatedJob.title,
+          message: `Job "${updatedJob.title}" has been marked as expired`
+        });
+      }
 
       res.status(200).json({
         success: true,
@@ -163,14 +165,16 @@ class JobController {
         status: 'pending'
       });
 
-      // Emit socket event to notify HR
-      req.io.emit('new-application', {
-        applicationId: application.id,
-        jobId: id,
-        jobTitle: job.title,
-        userId: userId,
-        message: `New application received for job: ${job.title}`
-      });
+      // Emit socket event to notify HR (if Socket.io is available)
+      if (req.io) {
+        req.io.emit('new-application', {
+          applicationId: application.id,
+          jobId: id,
+          jobTitle: job.title,
+          userId: userId,
+          message: `New application received for job: ${job.title}`
+        });
+      }
 
       res.status(201).json({
         success: true,

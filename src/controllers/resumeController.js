@@ -22,11 +22,15 @@ class ResumeController {
       // Process each file
       for (const file of files) {
         try {
+          // Handle both disk storage (file.path) and memory storage (file.buffer)
+          // In serverless (Vercel), files are in memory, so we use a placeholder path
+          const filePath = file.path || `memory://${Date.now()}-${file.originalname}`;
+          
           const resume = await Resume.create({
             jobId: jobId || null,
             hrId,
             filename: file.originalname,
-            filePath: file.path,
+            filePath: filePath,
             status: 'uploaded'
           });
 

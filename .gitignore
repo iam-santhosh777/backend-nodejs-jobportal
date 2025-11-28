@@ -22,4 +22,3 @@ Thumbs.db
 # Uploads (keep directory structure, ignore files)
 uploads/resumes/*
 !uploads/resumes/.gitkeep
-
