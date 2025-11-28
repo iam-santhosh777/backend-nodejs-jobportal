@@ -52,6 +52,19 @@ class Resume {
     const [rows] = await pool.query(query, [hrId]);
     return rows[0];
   }
+
+  static async delete(id) {
+    const query = 'DELETE FROM resumes WHERE id = ?';
+    await pool.query(query, [id]);
+    return true;
+  }
+
+  static async deleteByHR(hrId, resumeId) {
+    // Delete only if HR owns the resume
+    const query = 'DELETE FROM resumes WHERE id = ? AND hr_id = ?';
+    const [result] = await pool.query(query, [resumeId, hrId]);
+    return result.affectedRows > 0;
+  }
 }
 
 module.exports = Resume;
