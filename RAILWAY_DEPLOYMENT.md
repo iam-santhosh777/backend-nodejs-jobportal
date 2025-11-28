@@ -168,3 +168,4 @@ Your backend is now deployed at: `https://your-app-name.up.railway.app`
 
 Update your frontend to use this URL instead of `localhost:3000`.
 
+
