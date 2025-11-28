@@ -1,13 +1,13 @@
 /**
- * Course Repository
- * Data access layer for courses
+ * Job Collection Repository
+ * Data access layer for job collections
  */
 
 const { pool } = require('../config/database');
 
-class CourseRepository {
+class CollectionRepository {
   /**
-   * Find all courses with user information
+   * Find all job collections with user information
    */
   async findAll() {
     const [rows] = await pool.execute(`
@@ -16,7 +16,7 @@ class CourseRepository {
         u.id as user_id,
         u.name as user_name,
         u.email as user_email
-      FROM courses c
+      FROM collections c
       LEFT JOIN users u ON c.user_id = u.id
       ORDER BY c.id DESC
     `);
@@ -24,7 +24,7 @@ class CourseRepository {
   }
 
   /**
-   * Find course by ID with user information
+   * Find job collection by ID with user information
    */
   async findById(id) {
     const [rows] = await pool.execute(`
@@ -33,7 +33,7 @@ class CourseRepository {
         u.id as user_id,
         u.name as user_name,
         u.email as user_email
-      FROM courses c
+      FROM collections c
       LEFT JOIN users u ON c.user_id = u.id
       WHERE c.id = ?
     `, [id]);
@@ -41,7 +41,7 @@ class CourseRepository {
   }
 
   /**
-   * Find courses by user ID
+   * Find job collections by user ID
    */
   async findByUserId(userId) {
     const [rows] = await pool.execute(`
@@ -50,7 +50,7 @@ class CourseRepository {
         u.id as user_id,
         u.name as user_name,
         u.email as user_email
-      FROM courses c
+      FROM collections c
       LEFT JOIN users u ON c.user_id = u.id
       WHERE c.user_id = ?
       ORDER BY c.id DESC
@@ -59,48 +59,45 @@ class CourseRepository {
   }
 
   /**
-   * Create a new course
+   * Create a new job collection
    */
-  async create(courseData) {
-    const { name, description, user_id } = courseData;
+  async create(collectionData) {
+    const { name, description, user_id } = collectionData;
     const [result] = await pool.execute(
-      'INSERT INTO courses (name, description, user_id) VALUES (?, ?, ?)',
+      'INSERT INTO collections (name, description, user_id) VALUES (?, ?, ?)',
       [name, description, user_id || null]
     );
     return this.findById(result.insertId);
   }
 
   /**
-   * Update course by ID
+   * Update job collection by ID
    */
-  async update(id, courseData) {
-    const { name, description, user_id } = courseData;
+  async update(id, collectionData) {
+    const { name, description, user_id } = collectionData;
     await pool.execute(
-      'UPDATE courses SET name = ?, description = ?, user_id = ? WHERE id = ?',
+      'UPDATE collections SET name = ?, description = ?, user_id = ? WHERE id = ?',
       [name, description, user_id, id]
     );
     return this.findById(id);
   }
 
   /**
-   * Delete course by ID
+   * Delete job collection by ID
    */
   async delete(id) {
-    await pool.execute('DELETE FROM courses WHERE id = ?', [id]);
+    await pool.execute('DELETE FROM collections WHERE id = ?', [id]);
     return true;
   }
 
   /**
-   * Check if course exists by ID
+   * Check if job collection exists by ID
    */
   async exists(id) {
-    const course = await this.findById(id);
-    return course !== null;
+    const collection = await this.findById(id);
+    return collection !== null;
   }
 }
 
-module.exports = new CourseRepository();
-
-
-
+module.exports = new CollectionRepository();
 

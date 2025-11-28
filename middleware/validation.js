@@ -41,8 +41,8 @@ class Validation {
    * Validate ID parameter
    */
   validateId(req, res, next) {
-    const { id, courseId } = req.params;
-    const identifier = id || courseId;
+    const { id, collectionId } = req.params;
+    const identifier = id || collectionId;
     
     if (!identifier || isNaN(parseInt(identifier))) {
       return ApiResponse.badRequest(res, 'Invalid ID parameter');
